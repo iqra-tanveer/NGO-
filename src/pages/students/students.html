@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Student scholarship records — manage recipients with full CRUD, advanced JS methods, and dark mode." />
+  <title>Student Records | Shajar Hope Alliance</title>
+  <link rel="icon" type="image/png" href="../../../assets/img/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            forest: { DEFAULT: '#4a6741', dark: '#2e4a2a', light: '#7da870' },
+            amber:  { DEFAULT: '#c8903a', light: '#e8b06a' },
+            cream:  { DEFAULT: '#f9f6f0', dark: '#f0ebe0' },
+          },
+          fontFamily: { outfit: ['Outfit', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="../../../assets/css/style.css" />
+  <style>
+    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px); }
+    .modal-box { background:#fff;border-radius:1.25rem;padding:2rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);position:relative; }
+    .dark .modal-box { background:#1a2518; }
+    .vtab { padding:.45rem 1.1rem;border-radius:.6rem;font-weight:700;font-size:.78rem;cursor:pointer;border:1.5px solid transparent;transition:all .2s; }
+    .vtab.on  { background:#2e4a2a;color:#fff;border-color:#2e4a2a; }
+    .vtab.off { background:#fff;color:#6b7280;border-color:#e7e5e4; }
+    .dark .vtab.off { background:#1a2518;color:#8fa889;border-color:#2e4a2a; }
+    .inp { width:100%;padding:.6rem 1rem;background:#f9f6f0;border:1.5px solid #e7e5e4;border-radius:.75rem;font-size:.875rem;outline:none;transition:all .2s;font-family:'Outfit',sans-serif; }
+    .dark .inp { background:#1f3019;border-color:#2e4a2a;color:#d4e6cc; }
+    .inp:focus { border-color:#4a6741;box-shadow:0 0 0 3px rgba(74,103,65,.1); }
+    .lbl { font-size:.75rem;font-weight:700;color:#4b5563;letter-spacing:.03em;display:block;margin-bottom:.375rem; }
+    .dark .lbl { color:#8fa889; }
+    .field { margin-bottom:1rem; }
+    .card { background:#fff;border:1px solid #e7e5e4;border-radius:1rem;padding:1.5rem;transition:all .3s; }
+    .dark .card { background:#1a2518;border-color:#2e4a2a; }
+    .card:hover { box-shadow:0 10px 30px rgba(0,0,0,.1);transform:translateY(-4px); }
+  </style>
+</head>
+<body class="font-outfit bg-cream text-gray-800 dark:bg-[#0f1a0d] dark:text-[#d4e6cc] flex flex-col min-h-screen">
+
+<nav id="siteNav" class="sticky top-0 z-50 bg-cream/90 dark:bg-[rgba(15,26,13,.97)] backdrop-blur-md border-b border-stone-200 dark:border-[#2e4a2a] transition-shadow duration-300">
+  <div class="max-w-6xl mx-auto px-5 h-[70px] flex items-center justify-between">
+    <a href="../../../index.html" class="flex items-center gap-3">
+      <img src="../../../assets/img/logo.png" alt="Shajar Logo" class="w-11 h-11 object-contain" />
+      <div class="leading-tight">
+        <span class="block text-lg font-black text-forest-dark dark:text-forest-light tracking-wide">SHAJAR</span>
+        <span class="block text-[0.6rem] font-bold tracking-widest uppercase text-amber">Hope Alliance</span>
+      </div>
+    </a>
+    <ul class="hidden md:flex items-center gap-8">
+      <li><a href="../../../index.html" class="nav-link text-sm font-semibold text-gray-600 dark:text-[#8fa889] hover:text-forest-dark transition-colors">Home</a></li>
+      <li><a href="../about/about.html" class="nav-link text-sm font-semibold text-gray-600 dark:text-[#8fa889] hover:text-forest-dark transition-colors">About</a></li>
+      <li><a href="../contact/contact.html" class="nav-link text-sm font-semibold text-gray-600 dark:text-[#8fa889] hover:text-forest-dark transition-colors">Contact</a></li>
+      <li><a href="students.html" class="nav-link active text-sm font-semibold text-forest-dark dark:text-forest-light">Students</a></li>
+    </ul>
+    <div class="hidden md:flex items-center gap-3">
+      <button id="themeToggle" onclick="ThemeUtils.toggle()" aria-label="Toggle theme">🌙</button>
+      <a href="../signup/signup.html" class="text-sm font-bold border-2 border-forest text-forest px-5 py-2 rounded-lg hover:bg-forest hover:text-white transition-all duration-200">Sign Up</a>
+      <a href="../signin/signin.html" class="text-sm font-bold bg-forest text-white px-5 py-2 rounded-lg shadow-md hover:bg-forest-dark transition-all duration-200">Sign In</a>
+    </div>
+    <button id="burger" class="burger md:hidden flex flex-col gap-[5px] p-1 bg-transparent border-none cursor-pointer" aria-label="Open menu">
+      <span class="w-6 h-[2px] bg-forest-dark rounded"></span>
+      <span class="w-6 h-[2px] bg-forest-dark rounded"></span>
+      <span class="w-6 h-[2px] bg-forest-dark rounded"></span>
+    </button>
+  </div>
+  <div id="mobileMenu" class="hidden md:hidden bg-cream dark:bg-[#0f1a0d] border-t border-stone-200 dark:border-[#2e4a2a] px-5 py-4 flex flex-col gap-3">
+    <a href="../../../index.html" class="text-sm font-semibold text-gray-600 border-b border-stone-200 pb-2">Home</a>
+    <a href="../about/about.html" class="text-sm font-semibold text-gray-600 border-b border-stone-200 pb-2">About</a>
+    <a href="../contact/contact.html" class="text-sm font-semibold text-gray-600 border-b border-stone-200 pb-2">Contact</a>
+    <a href="students.html" class="text-sm font-semibold text-forest-dark border-b border-stone-200 pb-2">Students</a>
+    <a href="../signup/signup.html" class="text-sm font-bold border-2 border-forest text-forest text-center py-2.5 rounded-lg mt-1">Sign Up</a>
+    <a href="../signin/signin.html" class="text-sm font-bold bg-forest text-white text-center py-2.5 rounded-lg">Sign In</a>
+  </div>
+</nav>
+
+<section class="relative bg-gradient-to-br from-forest-dark via-forest to-forest-light text-white py-14 text-center overflow-hidden">
+  <div class="absolute top-0 right-0 w-64 h-64 bg-amber/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="relative z-10 max-w-2xl mx-auto px-5">
+    <span class="text-xs font-bold tracking-[0.2em] uppercase text-amber-light mb-3 block">Scholarship Management</span>
+    <h1 class="text-4xl md:text-5xl font-black leading-tight mb-3">Student <span class="text-amber-light">Records</span></h1>
+    <p class="text-white/80 leading-relaxed text-sm">Full CRUD · Advanced Array & String Methods · Object Manipulation · Dark Mode</p>
+  </div>
+</section>
+
+<section class="bg-white dark:bg-[#1a2518] border-b border-stone-100 dark:border-[#2e4a2a] py-7">
+  <div class="max-w-6xl mx-auto px-5 grid grid-cols-2 md:grid-cols-4 gap-5 text-center">
+    <div><div class="text-3xl font-black text-forest-dark dark:text-forest-light" id="statTotal">0</div><div class="text-xs font-bold tracking-widest uppercase text-gray-400 mt-1">Total Students</div></div>
+    <div><div class="text-3xl font-black text-green-600" id="statActive">0</div><div class="text-xs font-bold tracking-widest uppercase text-gray-400 mt-1">Active</div></div>
+    <div><div class="text-xl font-black text-forest-dark dark:text-forest-light" id="statAmount">0</div><div class="text-xs font-bold tracking-widest uppercase text-gray-400 mt-1">Total Disbursed</div></div>
+    <div><div class="text-3xl font-black text-amber" id="statAvgGpa">0.00</div><div class="text-xs font-bold tracking-widest uppercase text-gray-400 mt-1">Avg GPA</div></div>
+  </div>
+</section>
+
+<section class="bg-cream dark:bg-[#0f1a0d] py-5 border-b border-stone-200 dark:border-[#2e4a2a]">
+  <div class="max-w-6xl mx-auto px-5 flex flex-wrap gap-3">
+    <input id="searchName" type="text" placeholder="🔍  Search name, university, program…" class="flex-1 min-w-[180px] inp" />
+    <select id="filterUniversity" class="inp" style="width:auto;flex:0 0 auto;"><option value="">All Universities</option><option>NUST</option><option>Dow Medical</option><option>LUMS</option><option>UET Lahore</option><option>FAST-NUCES</option><option>COMSATS</option></select>
+    <select id="filterStatus" class="inp" style="width:auto;flex:0 0 auto;"><option value="">All Statuses</option><option>Active</option><option>Pending</option><option>Completed</option></select>
+    <select id="filterCity" class="inp" style="width:auto;flex:0 0 auto;"><option value="">All Cities</option><option>Islamabad</option><option>Lahore</option><option>Karachi</option><option>Peshawar</option></select>
+    <select id="filterYear" class="inp" style="width:auto;flex:0 0 auto;"><option value="">All Years</option><option value="1">Year 1</option><option value="2">Year 2</option><option value="3">Year 3</option><option value="4">Year 4</option></select>
+    <select id="sortBy" class="inp" style="width:auto;flex:0 0 auto;"><option value="">Sort By…</option><option value="name-asc">Name A→Z</option><option value="name-desc">Name Z→A</option><option value="gpa-desc">GPA High→Low</option><option value="gpa-asc">GPA Low→High</option><option value="amount-desc">Amount High→Low</option><option value="amount-asc">Amount Low→High</option><option value="year-asc">Year 1st→4th</option></select>
+    <button onclick="openAdd()" class="px-6 py-2.5 bg-forest-dark text-white font-bold rounded-xl hover:bg-forest shadow-md transition-all text-sm whitespace-nowrap">+ Add Student</button>
+  </div>
+</section>
+
+<main class="flex-1 max-w-6xl mx-auto w-full px-5 py-8">
+
+  <div class="flex items-center justify-between mb-5">
+    <p class="text-sm font-bold text-gray-500 dark:text-[#7a9d76]" id="resultCount"></p>
+    <div class="flex gap-2">
+      <button class="vtab on" id="tabCards" onclick="setView('cards')">⊞ Cards</button>
+      <button class="vtab off" id="tabList"  onclick="setView('list')">☰ List</button>
+      <button class="vtab off" id="tabTable" onclick="setView('table')">⊟ Table</button>
+    </div>
+  </div>
+
+  <div id="cardsView"><div id="cardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div></div>
+
+  <div id="listView" class="hidden"><div id="listBody" class="flex flex-col gap-2.5"></div></div>
+
+  <div id="tableView" class="hidden">
+    <div class="bg-white dark:bg-[#1a2518] border border-stone-200 dark:border-[#2e4a2a] rounded-2xl overflow-hidden shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-forest-dark text-white text-xs font-bold uppercase tracking-widest">
+            <tr><th class="py-3.5 px-4">Name</th><th class="py-3.5 px-4">University</th><th class="py-3.5 px-4">Program</th><th class="py-3.5 px-4">Status</th><th class="py-3.5 px-4">Level</th><th class="py-3.5 px-4">Amount</th><th class="py-3.5 px-4">GPA</th><th class="py-3.5 px-4">City</th><th class="py-3.5 px-4">Actions</th></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-12">
+    <div class="text-center mb-6">
+      <span class="text-xs font-bold tracking-[0.18em] uppercase text-amber">Advanced Array Methods</span>
+      <h2 class="text-2xl font-black text-gray-900 dark:text-[#e8f5e2] mt-1">Data Analytics</h2>
+      <p class="text-xs text-gray-500 dark:text-[#7a9d76] mt-1">reduce · find · every · some · includes · sort</p>
+    </div>
+    <div id="analyticsGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"></div>
+  </div>
+
+  <div class="mt-12">
+    <div class="text-center mb-6">
+      <span class="text-xs font-bold tracking-[0.18em] uppercase text-amber">String Methods</span>
+      <h2 class="text-2xl font-black text-gray-900 dark:text-[#e8f5e2] mt-1">10 String Methods in Action</h2>
+    </div>
+    <div id="stringGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"></div>
+  </div>
+
+  <div class="mt-12">
+    <div class="text-center mb-6">
+      <span class="text-xs font-bold tracking-[0.18em] uppercase text-amber">Object Methods</span>
+      <h2 class="text-2xl font-black text-gray-900 dark:text-[#e8f5e2] mt-1">Object Inspection</h2>
+      <p class="text-xs text-gray-500 dark:text-[#7a9d76] mt-1">Object.keys · Object.values · Object.entries · Object.assign · Object.fromEntries</p>
+    </div>
+    <div id="objectGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </div>
+
+  <div class="mt-12">
+    <div class="text-center mb-6">
+      <span class="text-xs font-bold tracking-[0.18em] uppercase text-amber">Categorised with For Loop + If–Else</span>
+      <h2 class="text-2xl font-black text-gray-900 dark:text-[#e8f5e2] mt-1">GPA Categories</h2>
+    </div>
+    <div id="categoriesContainer" class="grid md:grid-cols-3 gap-6"></div>
+  </div>
+
+</main>
+
+<div id="addModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-forest-dark via-forest to-amber rounded-t-2xl"></div>
+    <h2 class="text-xl font-black text-gray-900 dark:text-[#e8f5e2] mb-1">Add New Student</h2>
+    <p class="text-sm text-gray-500 dark:text-[#7a9d76] mb-5">Enter scholarship recipient details.</p>
+    <form id="addForm" novalidate>
+      <div class="field"><label class="lbl" for="addName">Full Name *</label><input id="addName" type="text" placeholder="e.g. Ahmed Khan" required class="inp" /></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="field"><label class="lbl" for="addUniversity">University *</label><select id="addUniversity" required class="inp"><option value="">Select…</option><option>NUST</option><option>Dow Medical</option><option>LUMS</option><option>UET Lahore</option><option>FAST-NUCES</option><option>COMSATS</option></select></div>
+        <div class="field"><label class="lbl" for="addProgram">Program *</label><input id="addProgram" type="text" placeholder="e.g. Computer Science" required class="inp" /></div>
+        <div class="field"><label class="lbl" for="addYear">Year *</label><select id="addYear" required class="inp"><option value="">Select…</option><option value="1">Year 1</option><option value="2">Year 2</option><option value="3">Year 3</option><option value="4">Year 4</option></select></div>
+        <div class="field"><label class="lbl" for="addCity">City *</label><select id="addCity" required class="inp"><option value="">Select…</option><option>Islamabad</option><option>Lahore</option><option>Karachi</option><option>Peshawar</option><option>Quetta</option></select></div>
+        <div class="field"><label class="lbl" for="addGpa">GPA (0–4) *</label><input id="addGpa" type="number" step="0.01" min="0" max="4" placeholder="3.7" required class="inp" /></div>
+        <div class="field"><label class="lbl" for="addAmount">Amount (PKR) *</label><input id="addAmount" type="number" min="0" placeholder="75000" required class="inp" /></div>
+      </div>
+      <div class="field"><label class="lbl" for="addStatus">Status *</label><select id="addStatus" required class="inp"><option value="">Select…</option><option>Active</option><option>Pending</option><option>Completed</option></select></div>
+      <div class="flex gap-3 mt-2">
+        <button type="button" onclick="closeAdd()" class="flex-1 py-2.5 border-2 border-stone-200 text-gray-600 dark:text-[#8fa889] dark:border-[#2e4a2a] font-bold rounded-xl text-sm">Cancel</button>
+        <button type="submit" class="flex-1 py-2.5 bg-forest-dark text-white font-bold rounded-xl text-sm hover:bg-forest shadow-md transition-all">Add Student →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="editModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber to-amber-light rounded-t-2xl"></div>
+    <h2 class="text-xl font-black text-gray-900 dark:text-[#e8f5e2] mb-1">Edit Student</h2>
+    <p class="text-sm text-gray-500 dark:text-[#7a9d76] mb-5">Update scholarship recipient details.</p>
+    <form id="editForm" novalidate>
+      <div class="field"><label class="lbl" for="editName">Full Name *</label><input id="editName" type="text" required class="inp" /></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="field"><label class="lbl" for="editUniversity">University *</label><select id="editUniversity" required class="inp"><option>NUST</option><option>Dow Medical</option><option>LUMS</option><option>UET Lahore</option><option>FAST-NUCES</option><option>COMSATS</option></select></div>
+        <div class="field"><label class="lbl" for="editProgram">Program *</label><input id="editProgram" type="text" required class="inp" /></div>
+        <div class="field"><label class="lbl" for="editYear">Year *</label><select id="editYear" required class="inp"><option value="1">Year 1</option><option value="2">Year 2</option><option value="3">Year 3</option><option value="4">Year 4</option></select></div>
+        <div class="field"><label class="lbl" for="editCity">City *</label><select id="editCity" required class="inp"><option>Islamabad</option><option>Lahore</option><option>Karachi</option><option>Peshawar</option><option>Quetta</option></select></div>
+        <div class="field"><label class="lbl" for="editGpa">GPA *</label><input id="editGpa" type="number" step="0.01" min="0" max="4" required class="inp" /></div>
+        <div class="field"><label class="lbl" for="editAmount">Amount (PKR) *</label><input id="editAmount" type="number" min="0" required class="inp" /></div>
+      </div>
+      <div class="field"><label class="lbl" for="editStatus">Status *</label><select id="editStatus" required class="inp"><option>Active</option><option>Pending</option><option>Completed</option></select></div>
+      <div class="flex gap-3 mt-2">
+        <button type="button" onclick="closeEdit()" class="flex-1 py-2.5 border-2 border-stone-200 dark:border-[#2e4a2a] text-gray-600 dark:text-[#8fa889] font-bold rounded-xl text-sm">Cancel</button>
+        <button type="submit" class="flex-1 py-2.5 bg-amber text-white font-bold rounded-xl text-sm hover:bg-amber-light shadow-md transition-all">Update →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<footer class="bg-[#111a0f] text-[#8fa889] py-8 border-t border-white/5 mt-auto">
+  <div class="max-w-6xl mx-auto px-5 flex flex-col md:flex-row justify-between items-center gap-3 text-xs">
+    <div class="flex items-center gap-3">
+      <img src="../../../assets/img/logo.png" alt="Shajar Logo" class="w-8 h-8 object-contain brightness-0 invert opacity-60" />
+      <span class="font-black text-white">SHAJAR <span class="text-amber font-normal">Hope Alliance</span></span>
+    </div>
+    <span>© 2026 Shajar Hope Alliance. All rights reserved.</span>
+  </div>
+</footer>
+
+<script src="../../constants/config.js"></script>
+<script src="../../database/students.js"></script>
+<script src="../../constants/themeConstants.js"></script>
+<script src="../../../src/pages/home/home.js"></script>
+<script>
+  let students = studentsDB.map(s => Object.assign({}, s));
+  let nextId = nextStudentId;
+  let editingId = null;
+  let currentView = 'cards';
+
+  const trim       = s => s.trim();
+  const lower      = s => s.toLowerCase();
+  const upper      = s => s.toUpperCase();
+  const initials   = n => n.trim().split(' ').map(w => w.charAt(0).toUpperCase()).join('');
+  const truncate   = (s, n) => s.length > n ? s.slice(0, n) + '…' : s;
+  const fmtId      = id => 'SHA-' + String(id).padStart(4, '0');
+  const cleanName  = s => trim(s).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  const fmtAmt     = n => 'PKR ' + n.toLocaleString();
+  const searchHit  = (s, q) => {
+    const q2 = lower(trim(q));
+    return lower(s.name).includes(q2) ||
+           lower(s.university).startsWith(q2) ||
+           lower(s.program).includes(q2) ||
+           String(s.amount).includes(q2) ||
+           lower(s.city).includes(q2);
+  };
+
+  const gpaInfo = gpa => gpa >= APP_CONFIG.gpaThresholds.distinction
+    ? { text: 'Distinction', cls: 'bg-emerald-100 text-emerald-700' }
+    : gpa >= APP_CONFIG.gpaThresholds.merit
+      ? { text: 'Merit',       cls: 'bg-blue-100 text-blue-700' }
+      : { text: 'Standard',    cls: 'bg-stone-100 text-stone-600' };
+
+  const schType  = amt => amt >= APP_CONFIG.scholarshipTiers.full ? 'Full Scholarship' :
+                          amt >= APP_CONFIG.scholarshipTiers.partial ? 'Partial Scholarship' : 'Minimal Aid';
+
+  const levelOf  = yr => yr === 4 ? 'Senior' : yr === 3 ? 'Junior' : yr === 2 ? 'Sophomore' : 'Freshman';
+
+  const statusCls = st => st === 'Active' ? 'bg-green-100 text-green-700' :
+                           st === 'Pending' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700';
+
+  const cityTier = c => ['Islamabad','Lahore','Karachi'].includes(c) ? 'Metro' : 'Regional';
+
+  const getFiltered = () => {
+    const q   = document.getElementById('searchName').value;
+    const uni = document.getElementById('filterUniversity').value;
+    const st  = document.getElementById('filterStatus').value;
+    const cy  = document.getElementById('filterCity').value;
+    const yr  = document.getElementById('filterYear').value;
+    const so  = document.getElementById('sortBy').value;
+
+    let arr = students.filter(s => {
+      if (q   && !searchHit(s, q))             return false;
+      if (uni && s.university !== uni)          return false;
+      if (st  && s.status !== st)               return false;
+      if (cy  && s.city !== cy)                 return false;
+      if (yr  && s.year !== parseInt(yr))       return false;
+      return true;
+    });
+
+    if (so) {
+      const [key, dir] = so.split('-');
+      arr = arr.sort((a, b) => {
+        const mult = dir === 'asc' ? 1 : -1;
+        return typeof a[key] === 'string'
+          ? mult * a[key].localeCompare(b[key])
+          : mult * (a[key] - b[key]);
+      });
+    }
+    return arr;
+  };
+
+  const cardHTML = s => {
+    const g  = gpaInfo(s.gpa);
+    const sc = statusCls(s.status);
+    return `
+      <div class="card flex flex-col gap-3">
+        <div class="flex items-start justify-between">
+          <div class="w-11 h-11 rounded-full bg-gradient-to-br from-forest-dark to-amber flex items-center justify-center text-white font-black text-sm">${initials(s.name)}</div>
+          <span class="text-xs font-bold px-2.5 py-1 rounded-full ${sc}">${s.status}</span>
+        </div>
+        <div>
+          <h3 class="font-black text-gray-900 dark:text-[#e8f5e2]">${cleanName(s.name)}</h3>
+          <p class="text-xs text-gray-500 dark:text-[#7a9d76] mt-0.5">${truncate(s.program, 32)}</p>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <span class="text-xs px-2 py-0.5 rounded-full bg-green-50 text-forest-dark font-semibold">${s.university}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-stone-100 text-gray-600 font-semibold">${levelOf(s.year)} · ${fmtId(s.id)}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full ${g.cls} font-semibold">GPA ${s.gpa} · ${g.text}</span>
+        </div>
+        <div class="border-t border-stone-100 dark:border-[#2e4a2a] pt-3">
+          <div class="text-sm font-black text-forest-dark dark:text-forest-light">${fmtAmt(s.amount)}</div>
+          <div class="text-xs text-gray-500 dark:text-[#7a9d76] font-semibold">${schType(s.amount)} · ${cityTier(s.city)}</div>
+        </div>
+        <div class="flex gap-2 mt-auto pt-1">
+          <button onclick="openEdit(${s.id})" class="flex-1 py-2 border-2 border-forest text-forest font-bold rounded-xl text-xs hover:bg-forest hover:text-white transition-all">✏️ Edit</button>
+          <button onclick="deleteStudent(${s.id})" class="flex-1 py-2 border-2 border-red-300 text-red-500 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white transition-all">🗑️ Delete</button>
+        </div>
+      </div>`;
+  };
+
+  const renderCards = () => {
+    const f = getFiltered();
+    document.getElementById('cardsGrid').innerHTML = f.length
+      ? f.map(cardHTML).join('')
+      : '<div class="col-span-3 text-center py-14 text-gray-400"><div class="text-5xl mb-3">🔍</div><p class="font-bold">No students match your filters</p></div>';
+  };
+
+  const renderList = () => {
+    const f = getFiltered();
+    let html = '';
+    for (let i = 0; i < f.length; i++) {
+      const s = f[i]; const sc = statusCls(s.status);
+      html += `<div class="flex items-center justify-between bg-white dark:bg-[#1a2518] border border-stone-200 dark:border-[#2e4a2a] rounded-xl px-5 py-3.5 hover:shadow-md transition-all">
+        <div class="flex items-center gap-4">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-forest-dark to-amber flex items-center justify-center text-white font-black text-xs shrink-0">${initials(s.name)}</div>
+          <div><div class="font-bold text-gray-900 dark:text-[#e8f5e2] text-sm">${cleanName(s.name)}</div><div class="text-xs text-gray-500 dark:text-[#7a9d76]">${s.university} · ${s.program}</div></div>
+        </div>
+        <div class="hidden md:flex items-center gap-5 text-xs">
+          <span class="font-bold px-2 py-0.5 rounded-full ${sc}">${s.status}</span>
+          <span class="text-gray-500 dark:text-[#7a9d76]">${levelOf(s.year)}</span>
+          <span class="font-black text-forest-dark dark:text-forest-light">${fmtAmt(s.amount)}</span>
+          <span class="text-gray-400">GPA ${s.gpa}</span>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="openEdit(${s.id})" class="px-3 py-1.5 border border-forest text-forest font-bold rounded-lg text-xs hover:bg-forest hover:text-white transition-all">Edit</button>
+          <button onclick="deleteStudent(${s.id})" class="px-3 py-1.5 border border-red-300 text-red-500 font-bold rounded-lg text-xs hover:bg-red-500 hover:text-white transition-all">Delete</button>
+        </div>
+      </div>`;
+    }
+    document.getElementById('listBody').innerHTML = html || '<p class="text-center text-gray-400 py-10 font-bold">No students found</p>';
+  };
+
+  const renderTable = () => {
+    const f = getFiltered();
+    let html = '';
+    for (let i = 0; i < f.length; i++) {
+      const s = f[i]; const g = gpaInfo(s.gpa); const sc = statusCls(s.status);
+      html += `<tr class="border-b border-stone-100 dark:border-[#1f3019] hover:bg-cream dark:hover:bg-[#1f3019] transition-colors">
+        <td class="py-3 px-4 font-bold text-gray-900 dark:text-[#e8f5e2] text-sm">${cleanName(s.name)}</td>
+        <td class="py-3 px-4 text-sm text-gray-600 dark:text-[#8fa889]">${s.university}</td>
+        <td class="py-3 px-4 text-sm text-gray-600 dark:text-[#8fa889]">${truncate(s.program, 24)}</td>
+        <td class="py-3 px-4"><span class="text-xs font-bold px-2 py-0.5 rounded-full ${sc}">${s.status}</span></td>
+        <td class="py-3 px-4 text-sm text-gray-600 dark:text-[#8fa889]">${levelOf(s.year)}</td>
+        <td class="py-3 px-4 text-sm font-bold text-forest-dark dark:text-forest-light">${fmtAmt(s.amount)}</td>
+        <td class="py-3 px-4"><span class="text-xs font-semibold px-2 py-0.5 rounded-full ${g.cls}">${s.gpa} · ${g.text}</span></td>
+        <td class="py-3 px-4 text-sm text-gray-600 dark:text-[#8fa889]">${s.city}</td>
+        <td class="py-3 px-4"><div class="flex gap-1.5">
+          <button onclick="openEdit(${s.id})" class="px-2.5 py-1 border border-forest text-forest font-bold rounded-lg text-xs hover:bg-forest hover:text-white transition-all">Edit</button>
+          <button onclick="deleteStudent(${s.id})" class="px-2.5 py-1 border border-red-300 text-red-500 font-bold rounded-lg text-xs hover:bg-red-500 hover:text-white transition-all">Del</button>
+        </div></td>
+      </tr>`;
+    }
+    document.getElementById('tableBody').innerHTML = html || '<tr><td colspan="9" class="text-center py-10 text-gray-400 font-bold">No students found</td></tr>';
+  };
+
+  const renderStats = () => {
+    let i = 0, total = 0, active = 0, gpaSum = 0;
+    while (i < students.length) {
+      total   += students[i].amount;
+      gpaSum  += students[i].gpa;
+      if (students[i].status === 'Active') active++;
+      i++;
+    }
+    document.getElementById('statTotal').textContent  = students.length;
+    document.getElementById('statActive').textContent = active;
+    document.getElementById('statAmount').textContent = 'PKR ' + total.toLocaleString();
+    document.getElementById('statAvgGpa').textContent = students.length
+      ? (gpaSum / students.length).toFixed(2) : '0.00';
+  };
+
+  const renderAnalytics = () => {
+    const totalFunds  = students.reduce((sum, s) => sum + s.amount, 0);
+    const avgGpa      = students.length ? (students.reduce((sum, s) => sum + s.gpa, 0) / students.length).toFixed(2) : 0;
+    const topScolar   = students.find(s => s.gpa === Math.max(...students.map(x => x.gpa)));
+    const allValid    = students.every(s => s.gpa >= 2.0);
+    const hasFullSch  = students.some(s => s.amount >= APP_CONFIG.scholarshipTiers.full);
+    const uniList     = [...new Set(students.map(s => s.university))];
+
+    const cards = [
+      { label: 'reduce()', title: 'Total Funds',    val: 'PKR ' + totalFunds.toLocaleString(), bg: 'bg-green-50 dark:bg-[#0c1a0a] border-green-200' },
+      { label: 'reduce()', title: 'Average GPA',   val: 'GPA ' + avgGpa,                     bg: 'bg-blue-50 dark:bg-[#0a0f1a] border-blue-200' },
+      { label: 'find()',   title: 'Top Scholar',   val: topScolar ? topScolar.name.split(' ')[0] : '—', bg: 'bg-amber-50 dark:bg-[#1a1200] border-amber-200' },
+      { label: 'every()',  title: 'All GPA Valid',  val: allValid ? '✅ Yes' : '❌ No',       bg: 'bg-emerald-50 dark:bg-[#0a180a] border-emerald-200' },
+      { label: 'some()',   title: 'Full Scholars',  val: hasFullSch ? '✅ Yes' : '❌ No',     bg: 'bg-purple-50 dark:bg-[#130a1a] border-purple-200' },
+      { label: 'Set / map()', title: 'Universities', val: uniList.length + ' unique',         bg: 'bg-stone-50 dark:bg-[#1a2518] border-stone-200' },
+    ];
+
+    document.getElementById('analyticsGrid').innerHTML = cards.map(c => `
+      <div class="border-2 ${c.bg} rounded-xl p-4 text-center">
+        <div class="text-xs font-bold text-gray-400 font-mono mb-1">.${c.label}</div>
+        <div class="font-black text-gray-900 dark:text-[#e8f5e2] text-sm leading-tight">${c.val}</div>
+        <div class="text-xs text-gray-500 dark:text-[#7a9d76] mt-1">${c.title}</div>
+      </div>`).join('');
+  };
+
+  const renderStringMethods = () => {
+    const s = students[0] || { name: 'Ahmed Khan', university: 'NUST', program: 'Software Engineering', id: 1, amount: 75000 };
+    const demos = [
+      { m: 'trim()',       ex: `'  ${s.name}  '.trim()`,         res: `'  ${s.name}  '.trim()` },
+      { m: 'toLowerCase()', ex: s.name,                          res: lower(s.name) },
+      { m: 'toUpperCase()', ex: s.university,                    res: upper(s.university) },
+      { m: 'charAt(0)',    ex: s.name,                           res: s.name.charAt(0) },
+      { m: 'slice(0,5)',   ex: s.program,                        res: s.program.slice(0, 5) + '…' },
+      { m: 'includes()',   ex: `program.includes('Eng')`,        res: String(s.program.includes('Eng')) },
+      { m: 'startsWith()', ex: `uni.startsWith('N')`,            res: String(s.university.startsWith('N')) },
+      { m: 'split(\" \")', ex: s.name,                           res: '[' + s.name.split(' ').join(', ') + ']' },
+      { m: 'padStart(4)',  ex: String(s.id),                     res: String(s.id).padStart(4, '0') },
+      { m: 'replace()',    ex: s.name,                           res: s.name.replace(s.name.split(' ')[0], '***') },
+    ];
+    document.getElementById('stringGrid').innerHTML = demos.map(d => `
+      <div class="bg-white dark:bg-[#1a2518] border border-stone-200 dark:border-[#2e4a2a] rounded-xl p-3">
+        <div class="font-black text-forest-dark dark:text-forest-light text-xs mb-1.5 font-mono">.${d.m}</div>
+        <div class="text-[0.65rem] text-gray-400 mb-0.5 truncate" title="${d.ex}">in: ${d.ex}</div>
+        <div class="text-xs font-bold text-gray-800 dark:text-[#d4e6cc] truncate" title="${d.res}">→ ${d.res}</div>
+      </div>`).join('');
+  };
+
+  const renderObjectMethods = () => {
+    const s = students[0] || {};
+    const keys    = Object.keys(s);
+    const vals    = Object.values(s).map(v => String(v));
+    const entries = Object.entries(s).slice(0, 4);
+    const cloned  = Object.assign({}, s, { name: 'Cloned Record', id: 999 });
+    const fromEnt = Object.fromEntries([['university', s.university], ['gpa', s.gpa], ['status', s.status]]);
+
+    const panels = [
+      { m: 'Object.keys(student)',    res: '[' + keys.join(', ') + ']' },
+      { m: 'Object.values(student)',  res: vals.slice(0, 5).join(', ') + '…' },
+      { m: 'Object.entries(student)', res: entries.map(([k,v]) => `${k}: ${v}`).join(' | ') },
+      { m: 'Object.assign({}, s)',    res: 'name: ' + cloned.name + ', id: ' + cloned.id },
+      { m: 'Object.fromEntries(…)',   res: JSON.stringify(fromEnt) },
+      { m: 'hasOwnProperty(\'gpa\')', res: String(s.hasOwnProperty('gpa')) },
+    ];
+
+    document.getElementById('objectGrid').innerHTML = panels.map(p => `
+      <div class="bg-white dark:bg-[#1a2518] border border-stone-200 dark:border-[#2e4a2a] rounded-xl p-4">
+        <div class="font-bold text-forest-dark dark:text-forest-light text-xs font-mono mb-2">${p.m}</div>
+        <div class="text-xs text-gray-600 dark:text-[#8fa889] break-all">${p.res}</div>
+      </div>`).join('');
+  };
+
+  const renderCategories = () => {
+    const cats = { Distinction: [], Merit: [], Standard: [] };
+    for (let i = 0; i < students.length; i++) {
+      const s = students[i];
+      if (s.gpa >= APP_CONFIG.gpaThresholds.distinction)      cats.Distinction.push(s);
+      else if (s.gpa >= APP_CONFIG.gpaThresholds.merit)       cats.Merit.push(s);
+      else                                                     cats.Standard.push(s);
+    }
+    const cfgs = [
+      { key: 'Distinction', wrap: 'border-2 border-emerald-300 bg-emerald-50 dark:bg-[#0c1a0a]', badge: 'bg-emerald-100 text-emerald-700', icon: '🌟', val: 'text-emerald-600' },
+      { key: 'Merit',       wrap: 'border-2 border-blue-300 bg-blue-50 dark:bg-[#0a0f1a]',       badge: 'bg-blue-100 text-blue-700',       icon: '⭐', val: 'text-blue-600' },
+      { key: 'Standard',    wrap: 'border-2 border-stone-300 bg-stone-50 dark:bg-[#1a2518]',     badge: 'bg-stone-100 text-stone-600',     icon: '✅', val: 'text-stone-600' },
+    ];
+    document.getElementById('categoriesContainer').innerHTML = cfgs.map(c => `
+      <div class="${c.wrap} rounded-2xl p-5">
+        <div class="flex items-center gap-2 mb-4"><span class="text-xl">${c.icon}</span><h3 class="font-black text-gray-900 dark:text-[#e8f5e2]">${c.key}</h3><span class="text-xs font-bold px-2 py-0.5 rounded-full ${c.badge}">${cats[c.key].length}</span></div>
+        <div class="space-y-2">${cats[c.key].length === 0
+          ? '<p class="text-sm text-gray-400 italic">None in this tier</p>'
+          : cats[c.key].map(s => `<div class="flex items-center justify-between bg-white dark:bg-[#1a2518] rounded-xl px-4 py-2.5 border border-stone-100 dark:border-[#2e4a2a]">
+              <div><div class="font-bold text-gray-900 dark:text-[#e8f5e2] text-sm">${cleanName(s.name)}</div><div class="text-xs text-gray-500 dark:text-[#7a9d76]">${s.university}</div></div>
+              <span class="font-black text-sm ${c.val}">GPA ${s.gpa}</span></div>`).join('')
+        }</div>
+      </div>`).join('');
+  };
+
+  const renderAll = () => {
+    renderStats();
+    renderCards();
+    renderList();
+    renderTable();
+    renderAnalytics();
+    renderStringMethods();
+    renderObjectMethods();
+    renderCategories();
+    document.getElementById('resultCount').textContent = getFiltered().length + ' of ' + students.length + ' students';
+  };
+
+  const applyFilters = () => {
+    renderCards(); renderList(); renderTable();
+    document.getElementById('resultCount').textContent = getFiltered().length + ' of ' + students.length + ' students';
+  };
+
+  const setView = v => {
+    currentView = v;
+    ['cards','list','table'].forEach(x => {
+      document.getElementById(x + 'View').classList.toggle('hidden', x !== v);
+      const btn = document.getElementById('tab' + x.charAt(0).toUpperCase() + x.slice(1));
+      btn.className = 'vtab ' + (x === v ? 'on' : 'off');
+    });
+  };
+
+  const deleteStudent = id => {
+    if (!confirm('Remove this student record?')) return;
+    students = students.filter(s => s.id !== id);
+    renderAll();
+  };
+
+  const openAdd  = () => { document.getElementById('addModal').classList.remove('hidden'); document.getElementById('addForm').reset(); };
+  const closeAdd = () => document.getElementById('addModal').classList.add('hidden');
+
+  const addStudent = e => {
+    e.preventDefault();
+    const rawName = document.getElementById('addName').value;
+    const newStudent = Object.assign({}, {
+      id:         nextId++,
+      name:       cleanName(rawName),
+      university: document.getElementById('addUniversity').value,
+      program:    trim(document.getElementById('addProgram').value),
+      year:       parseInt(document.getElementById('addYear').value),
+      amount:     parseInt(document.getElementById('addAmount').value),
+      status:     document.getElementById('addStatus').value,
+      gpa:        parseFloat(document.getElementById('addGpa').value),
+      city:       document.getElementById('addCity').value,
+    });
+    students.push(newStudent);
+    closeAdd();
+    renderAll();
+  };
+
+  const openEdit = id => {
+    editingId = id;
+    const s = students.find(s => s.id === id);
+    if (!s) return;
+    const fields = Object.entries(s);
+    fields.forEach(([k, v]) => {
+      const el = document.getElementById('edit' + k.charAt(0).toUpperCase() + k.slice(1));
+      if (el) el.value = v;
+    });
+    document.getElementById('editModal').classList.remove('hidden');
+  };
+
+  const closeEdit = () => { document.getElementById('editModal').classList.add('hidden'); editingId = null; };
+
+  const updateStudent = e => {
+    e.preventDefault();
+    const updates = Object.fromEntries([
+      ['name',       cleanName(document.getElementById('editName').value)],
+      ['university', document.getElementById('editUniversity').value],
+      ['program',    trim(document.getElementById('editProgram').value)],
+      ['year',       parseInt(document.getElementById('editYear').value)],
+      ['amount',     parseInt(document.getElementById('editAmount').value)],
+      ['status',     document.getElementById('editStatus').value],
+      ['gpa',        parseFloat(document.getElementById('editGpa').value)],
+      ['city',       document.getElementById('editCity').value],
+    ]);
+    students = students.map(s => s.id === editingId ? Object.assign({}, s, updates) : s);
+    closeEdit();
+    renderAll();
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderAll();
+    document.getElementById('addForm').addEventListener('submit', addStudent);
+    document.getElementById('editForm').addEventListener('submit', updateStudent);
+    ['searchName','filterUniversity','filterStatus','filterCity','filterYear','sortBy'].forEach(id => {
+      document.getElementById(id).addEventListener('input',  applyFilters);
+      document.getElementById(id).addEventListener('change', applyFilters);
+    });
+    document.getElementById('addModal').addEventListener('click',  e => { if (e.target === e.currentTarget) closeAdd(); });
+    document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEdit(); });
+  });
+</script>
+</body>
+</html>

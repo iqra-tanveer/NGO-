@@ -1,0 +1,20 @@
+const APP_CONFIG = {
+  appName: 'Shajar Hope Alliance',
+  version: '2.0.0',
+  universities: ['NUST', 'Dow Medical', 'LUMS', 'UET Lahore', 'FAST-NUCES', 'COMSATS'],
+  cities: ['Islamabad', 'Lahore', 'Karachi', 'Peshawar', 'Quetta'],
+  statuses: ['Active', 'Pending', 'Completed'],
+  years: [1, 2, 3, 4],
+  scholarshipTiers: { full: 75000, partial: 50000 },
+  gpaThresholds: { distinction: 3.7, merit: 3.4 },
+  sortOptions: [
+    { value: 'name-asc',    label: 'Name A → Z' },
+    { value: 'name-desc',   label: 'Name Z → A' },
+    { value: 'gpa-desc',    label: 'GPA: High → Low' },
+    { value: 'gpa-asc',     label: 'GPA: Low → High' },
+    { value: 'amount-desc', label: 'Amount: High → Low' },
+    { value: 'amount-asc',  label: 'Amount: Low → High' },
+    { value: 'year-asc',    label: 'Year: 1st → 4th' },
+  ],
+  theme: { storageKey: 'shajar-theme', default: 'light' },
+};
